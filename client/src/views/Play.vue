@@ -159,8 +159,8 @@ let toastTimer: ReturnType<typeof setTimeout> | null = null
 const goBack = () => router.back()
 
 const currentId = computed(() => episode.value?.id)
-const currentVideoUrl = computed(() => episode.value?.videoUrl || '')
-const currentThumb = computed(() => episode.value?.thumbUrl || getThumb(episode.value))
+const currentVideoUrl = computed(() => episode.value?.video_url || episode.value?.videoUrl || '')
+const currentThumb = computed(() => episode.value?.thumb_url || episode.value?.thumbUrl || episode.value?.cover_url || episode.value?.coverUrl || getThumb(episode.value))
 const currentEpNumber = computed(() => episode.value?.episodeNumber || 1)
 const totalEps = computed(() => episodeList.value.length)
 
@@ -180,7 +180,7 @@ const nextEpisode = computed(() => {
 
 const getThumb = (ep: any) => {
   if (!ep) return 'https://picsum.photos/200/300?random=1'
-  return ep.thumbUrl || ep.coverUrl || `https://picsum.photos/200/300?random=${ep.episodeNumber || 1}`
+  return ep.thumb_url || ep.thumbUrl || ep.cover_url || ep.coverUrl || `https://picsum.photos/200/300?random=${ep.episodeNumber || 1}`
 }
 
 const getLikes = (ep: any) => {
