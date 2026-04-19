@@ -6,11 +6,21 @@
       <video
         ref="videoRef"
         :src="currentVideoUrl"
-        controls
         autoplay
         playsinline
         :poster="currentThumb"
+        @click="togglePlay"
       ></video>
+
+      <!-- 播放/暂停图标 -->
+      <div v-if="showPlayIcon" class="play-icon" @click="togglePlay">
+        <svg v-if="isPaused" width="60" height="60" viewBox="0 0 24 24" fill="rgba(255,255,255,0.9)">
+          <path d="M8 5v14l11-7z"/>
+        </svg>
+        <svg v-else width="60" height="60" viewBox="0 0 24 24" fill="rgba(255,255,255,0.9)">
+          <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+        </svg>
+      </div>
 
       <!-- 控制覆盖层 -->
       <div class="overlay" :class="{ hidden: !overlayVisible }">
@@ -138,6 +148,8 @@ const showSwipeHint = ref(false)
 const swipeHint = ref('')
 const toastShow = ref(false)
 const toastMsg = ref('')
+const isPaused = ref(false)
+const showPlayIcon = ref(false)
 
 // 互动状态
 const isLiked = ref(false)
@@ -190,6 +202,24 @@ const getLikes = (ep: any) => {
 // 切换覆盖层显示/隐藏
 const toggleOverlay = () => {
   overlayVisible.value = !overlayVisible.value
+}
+
+// 切换播放/暂停
+const togglePlay = () => {
+  const video = videoRef.value
+  if (!video) return
+  if (video.paused) {
+    video.play()
+    isPaused.value = false
+  } else {
+    video.pause()
+    isPaused.value = true
+  }
+  // 显示播放图标
+  showPlayIcon.value = true
+  setTimeout(() => {
+    showPlayIcon.value = false
+  }, 800)
 }
 
 // 切换集数列表显示
@@ -297,6 +327,14 @@ const setupVideoListeners = () => {
     }
   })
 
+  video.addEventListener('play', () => {
+    isPaused.value = false
+  })
+
+  video.addEventListener('pause', () => {
+    isPaused.value = true
+  })
+
   // 尝试自动播放视频
   video.play().catch(() => {
     // 自动播放被浏览器阻止，静默处理
@@ -392,6 +430,18 @@ onUnmounted(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+/* 播放/暂停图标 */
+.play-icon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 15;
+  opacity: 0.9;
+  animation: fadeInOut 0.8s ease;
+  pointer-events: none;
 }
 
 /* 控制覆盖层 */
