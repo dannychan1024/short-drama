@@ -9,7 +9,8 @@
         autoplay
         playsinline
         :poster="currentThumb"
-        @click="togglePlay"
+        @click="toggleOverlay"
+        @dblclick="togglePlay"
       ></video>
 
       <!-- 播放/暂停图标 -->
