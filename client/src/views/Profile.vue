@@ -9,10 +9,11 @@
         <h2>{{ userInfo?.nickname || '未登录' }}</h2>
         <p class="phone">{{ userInfo?.phone || '请先登录' }}</p>
       </div>
-      <router-link to="/wallet" class="balance-card">
+      <router-link v-if="userStore.token" to="/wallet" class="balance-card">
         <span class="balance-label">余额</span>
         <span class="balance-value">¥{{ (userInfo?.balance || 0).toFixed(2) }}</span>
       </router-link>
+      <router-link v-else to="/login" class="login-btn">登录/注册</router-link>
     </div>
 
     <div class="action-grid">
@@ -185,6 +186,17 @@ onMounted(async () => {
 
 .balance-value {
   font-size: 18px;
+  font-weight: bold;
+}
+
+.login-btn {
+  background: rgba(255,255,255,0.9);
+  border-radius: 12px;
+  padding: 12px 16px;
+  text-align: center;
+  text-decoration: none;
+  color: #ff6b6b;
+  font-size: 14px;
   font-weight: bold;
 }
 

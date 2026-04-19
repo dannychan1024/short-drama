@@ -29,7 +29,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { walletApi } from '@/api/wallet'
 import { useUserStore } from '@/stores/user'
-import { ElMessage } from 'element-plus'
+import Toast from '@/utils/toast'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -44,9 +44,9 @@ const handleRecharge = async () => {
   try {
     await walletApi.recharge(selectedAmount.value)
     balance.value += selectedAmount.value
-    ElMessage.success('充值成功')
+    Toast.success('充值成功')
   } catch (error: any) {
-    ElMessage.error(error.message || '充值失败')
+    Toast.error(error.message || '充值失败')
   }
 }
 

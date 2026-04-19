@@ -1,8 +1,8 @@
 <template>
-  <div class="play-page" @touchstart="handleTouchStart" @touchend="handleTouchEnd">
+  <div class="play-page">
 
     <!-- 视频播放器区域 - 全屏固定 -->
-    <div class="video-container" @click="toggleOverlay">
+    <div class="video-container" @click="toggleOverlay" @touchstart="handleTouchStart" @touchend="handleTouchEnd">
       <video
         ref="videoRef"
         :src="currentVideoUrl"
@@ -82,7 +82,7 @@
                 @click.stop="switchTo(ep)"
               >
                 <img :src="getThumb(ep)" class="thumb-img" />
-                <span class="thumb-badge">第{{ ep.episodeNumber }}集</span>
+                <span class="thumb-badge">第{{ ep.episode_number || ep.episodeNumber }}集</span>
                 <div v-if="ep.id === currentId" class="thumb-playing"></div>
               </div>
             </div>
@@ -161,7 +161,7 @@ const goBack = () => router.back()
 const currentId = computed(() => episode.value?.id)
 const currentVideoUrl = computed(() => episode.value?.video_url || episode.value?.videoUrl || '')
 const currentThumb = computed(() => episode.value?.thumb_url || episode.value?.thumbUrl || episode.value?.cover_url || episode.value?.coverUrl || getThumb(episode.value))
-const currentEpNumber = computed(() => episode.value?.episodeNumber || 1)
+const currentEpNumber = computed(() => episode.value?.episode_number || episode.value?.episodeNumber || 1)
 const totalEps = computed(() => episodeList.value.length)
 
 const currentIndex = computed(() => {
@@ -180,7 +180,7 @@ const nextEpisode = computed(() => {
 
 const getThumb = (ep: any) => {
   if (!ep) return 'https://picsum.photos/200/300?random=1'
-  return ep.thumb_url || ep.thumbUrl || ep.cover_url || ep.coverUrl || `https://picsum.photos/200/300?random=${ep.episodeNumber || 1}`
+  return ep.thumb_url || ep.thumbUrl || ep.cover_url || ep.coverUrl || `https://picsum.photos/200/300?random=${ep.episode_number || ep.episodeNumber || 1}`
 }
 
 const getLikes = (ep: any) => {
@@ -403,11 +403,16 @@ onUnmounted(() => {
   height: 100%;
   z-index: 10;
   transition: opacity 0.3s ease;
+  pointer-events: none;
 }
 
 .overlay.hidden {
   opacity: 0;
   pointer-events: none;
+}
+
+.overlay * {
+  pointer-events: auto;
 }
 
 /* 顶部区域 */

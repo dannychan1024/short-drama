@@ -14,7 +14,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/DramaDetail.vue')
   },
   {
-    path: '/play/:id',
+    path: '/play/:episodeId',
     name: 'play',
     component: () => import('@/views/Play.vue')
   },
@@ -33,6 +33,11 @@ const routes: RouteRecordRaw[] = [
     name: 'profile',
     component: () => import('@/views/Profile.vue'),
     meta: { showTabBar: true }
+  },
+  {
+    path: '/login',
+    name: 'login',
+    component: () => import('@/views/Login.vue')
   },
   {
     path: '/signin',

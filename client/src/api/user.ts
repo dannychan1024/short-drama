@@ -5,7 +5,11 @@ export const userApi = {
   login: (phone: string, code: string) => {
     return request.post<any>('/auth/login', { phone, code })
   },
-  
+
+  sendCode: (phone: string) => {
+    return request.post<any>('/auth/send-code', { phone })
+  },
+
   getUserInfo: () => {
     return request.get<any>('/user/info')
   },

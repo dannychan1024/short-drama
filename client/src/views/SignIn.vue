@@ -67,7 +67,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import Toast from '@/utils/toast'
 
 const router = useRouter()
 const goBack = () => router.back()
@@ -127,15 +127,15 @@ const handleSignIn = async () => {
   // 检查连续签到奖励
   if (continuousDays.value === 3) {
     totalCoins.value += 5
-    ElMessage.success('恭喜获得连续3天签到奖励5币！')
+    Toast.success('恭喜获得连续3天签到奖励5币！')
   } else if (continuousDays.value === 7) {
     totalCoins.value += 15
-    ElMessage.success('恭喜获得连续7天签到奖励15币！')
+    Toast.success('恭喜获得连续7天签到奖励15币！')
   } else if (continuousDays.value === 30) {
     totalCoins.value += 50
-    ElMessage.success('恭喜获得连续30天签到奖励50币！')
+    Toast.success('恭喜获得连续30天签到奖励50币！')
   } else {
-    ElMessage.success('签到成功，获得1币！')
+    Toast.success('签到成功，获得1币！')
   }
 }
 

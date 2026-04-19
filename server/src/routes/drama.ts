@@ -87,4 +87,18 @@ router.get('/:id/episodes', (req: Request, res: Response) => {
   }
 })
 
+// Debug: update all video URLs (one-time use)
+router.post('/debug/update-video-urls', (req: Request, res: Response) => {
+  try {
+    const { videoUrl } = req.body
+    if (!videoUrl) {
+      return res.status(400).json({ code: 400, message: 'videoUrl required', data: null })
+    }
+    const result = db.prepare('UPDATE episodes SET video_url = ?').run(videoUrl)
+    res.json({ code: 0, message: 'success', data: { updated: result.changes } })
+  } catch (error: any) {
+    res.status(500).json({ code: 500, message: error.message, data: null })
+  }
+})
+
 export default router

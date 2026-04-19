@@ -2,6 +2,7 @@ import { Router, Response } from 'express'
 import db from '../models/database.js'
 import { authMiddleware, AuthRequest } from '../middleware/auth.js'
 import bcrypt from 'bcryptjs'
+import jwt from 'jsonwebtoken'
 
 const router = Router()
 
@@ -34,7 +35,7 @@ router.post('/login', (req: AuthRequest, res: Response) => {
       }
     }
     
-    const token = require('jsonwebtoken').sign(
+    const token = jwt.sign(
       { adminId: (admin as any).id, type: 'admin' },
       process.env.JWT_SECRET || 'short-drama-secret-key',
       { expiresIn: '7d' }

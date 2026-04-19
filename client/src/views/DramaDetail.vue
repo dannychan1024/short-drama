@@ -5,7 +5,7 @@
     <div v-if="drama" class="content">
       <div class="poster">
         <img :src="drama.cover" :alt="drama.title" />
-        <div class="poster-overlay">
+        <div class="poster-overlay" @click="playFirstEpisode">
           <span class="play-hint">▶ 点击播放</span>
         </div>
       </div>
@@ -36,12 +36,12 @@
           <div 
             v-for="ep in drama.episodes" 
             :key="ep.id"
-            :class="['episode', { free: ep.isFree, locked: !ep.isFree && !hasPurchased }]"
+            :class="['episode', { free: ep.is_free, locked: !ep.is_free && !hasPurchased }]"
             @click="playEpisode(ep)"
           >
-            <span class="ep-num">第{{ ep.episodeNumber }}集</span>
+            <span class="ep-num">第{{ ep.episode_number }}集</span>
             <span class="ep-title">{{ ep.title }}</span>
-            <span v-if="ep.isFree" class="free-tag">免费</span>
+            <span v-if="ep.is_free" class="free-tag">免费</span>
             <span v-else-if="hasPurchased" class="unlocked-icon">✓</span>
             <span v-else class="lock-icon">🔒</span>
           </div>
@@ -59,7 +59,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useDramaStore } from '@/stores/drama'
 import { useUserStore } from '@/stores/user'
 import { orderApi } from '@/api/order'
-import { ElMessage } from 'element-plus'
+import Toast from '@/utils/toast'
 
 const router = useRouter()
 const route = useRoute()
@@ -85,32 +85,39 @@ const goBack = () => router.back()
 
 const toggleFollow = () => {
   isFollowed.value = !isFollowed.value
-  ElMessage.success(isFollowed.value ? '追剧成功' : '已取消追剧')
+  Toast.success(isFollowed.value ? '追剧成功' : '已取消追剧')
 }
 
 const handleBuy = async () => {
   if (!userStore.token) {
-    ElMessage.warning('请先登录')
+    Toast.warning('请先登录')
+    router.push('/login')
     return
   }
-  
+
   try {
     const res = await orderApi.createOrder(drama.value!.id)
     await orderApi.payOrder(res.data.id)
-    ElMessage.success('购买成功')
+    Toast.success('购买成功')
     hasPurchased.value = true
     await dramaStore.fetchDramaDetail(drama.value!.id)
     drama.value = dramaStore.currentDrama
   } catch (error: any) {
-    ElMessage.error(error.message || '购买失败')
+    Toast.error(error.message || '购买失败')
+  }
+}
+
+const playFirstEpisode = () => {
+  if (drama.value?.episodes?.length) {
+    playEpisode(drama.value.episodes[0])
   }
 }
 
 const playEpisode = (ep: any) => {
-  if (ep.isFree || hasPurchased.value) {
+  if (ep.is_free || hasPurchased.value) {
     router.push(`/play/${ep.id}`)
   } else {
-    ElMessage.warning('请先购买整剧')
+    Toast.warning('请先购买整剧')
   }
 }
 

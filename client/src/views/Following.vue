@@ -36,7 +36,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import Toast from '@/utils/toast'
 import TabBar from '@/components/TabBar.vue'
 
 const router = useRouter()
@@ -48,7 +48,7 @@ const goDetail = (id: number) => {
 
 const unfollow = (id: number) => {
   followingList.value = followingList.value.filter(item => item.id !== id)
-  ElMessage.success('已取消追剧')
+  Toast.success('已取消追剧')
 }
 
 onMounted(() => {

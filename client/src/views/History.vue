@@ -34,7 +34,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import Toast from '@/utils/toast'
 
 const router = useRouter()
 const goBack = () => router.back()
@@ -60,7 +60,7 @@ const goPlay = (item: any) => {
 
 const clearHistory = () => {
   historyList.value = []
-  ElMessage.success('已清空观看历史')
+  Toast.success('已清空观看历史')
 }
 
 onMounted(() => {

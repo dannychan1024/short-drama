@@ -28,7 +28,7 @@
           v-for="(drama, index) in hotList" 
           :key="drama.id" 
           class="rank-item"
-          @click="goDetail(drama.id)"
+          @click="goPlay(drama)"
         >
           <span :class="['rank-num', { top: index < 3 }]">{{ index + 1 }}</span>
           <img :src="drama.cover" :alt="drama.title" class="rank-cover" />
@@ -50,7 +50,7 @@
           v-for="drama in dramaList" 
           :key="drama.id" 
           class="drama-item"
-          @click="goDetail(drama.id)"
+          @click="goPlay(drama)"
         >
           <img :src="drama.cover" :alt="drama.title" class="cover" />
           <div class="info">
@@ -105,8 +105,10 @@ const changeCategory = async (category: string) => {
   loading.value = false
 }
 
-const goDetail = (id: number) => {
-  router.push(`/drama/${id}`)
+const goPlay = (drama: any) => {
+  // 跳转播放页，使用 drama.id 作为 episodeId（实际应为第一集的 episodeId）
+  // drama_id 用于获取剧集列表数据
+  router.push(`/play/${drama.id}?drama_id=${drama.id}`)
 }
 
 onMounted(async () => {
