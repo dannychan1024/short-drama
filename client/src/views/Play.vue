@@ -335,8 +335,8 @@ onMounted(async () => {
       dramaDescription.value = dramaDescription.value || '一场意外，她被迫嫁给他。本以为是形婚，他却步步紧逼...'
     }
 
-    // 用 drama_id 找到对应的 episode
-    episode.value = episodeList.value.find(ep => ep.drama_id === drama_id) || episodeList.value.find(ep => ep.id === episodeId) || episodeList.value[0]
+    // 用 episodeId 直接查找对应的 episode
+    episode.value = episodeList.value.find(ep => ep.id === episodeId) || episodeList.value[0]
     likeCount.value = getLikes(episode.value)
     setTimeout(setupVideoListeners, 100)
 
