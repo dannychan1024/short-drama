@@ -257,22 +257,12 @@ const goPlay = (drama: any) => {
   router.push(`/play/${drama.id}?drama_id=${drama.id}`)
 }
 
-// 获取热播榜
-const fetchHotList = async () => {
-  try {
-    await dramaStore.fetchDramaList({ page: 1, pageSize: 10 })
-    hotList.value = [...dramaStore.dramaList]
-  } catch (e) {
-    console.error('获取热播榜失败:', e)
-  }
-}
-
 onMounted(async () => {
-  // 获取热播榜
-  await fetchHotList()
-
-  // 获取最新剧集
+  // 获取剧集列表（一次请求获取热播榜和最新剧集）
   await fetchLatestDramas()
+
+  // 热播榜使用 dramaList 前3条
+  hotList.value = dramaList.value.slice(0, 3)
 
   // 设置无限滚动
   await nextTick()
