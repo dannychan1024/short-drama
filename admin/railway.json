@@ -5,7 +5,7 @@
     "outputDirectory": "dist"
   },
   "deploy": {
-    "startCommand": "npx serve dist -l 8080",
+    "startCommand": "node static-server.js",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 3
   }
