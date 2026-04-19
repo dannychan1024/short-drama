@@ -2,15 +2,15 @@
   <div class="play-page">
 
     <!-- 视频播放器区域 - 全屏固定 -->
-    <div class="video-container" @click="toggleOverlay" @touchstart="handleTouchStart" @touchend="handleTouchEnd">
+    <div class="video-container" @touchstart="handleTouchStart" @touchend="handleTouchEnd">
       <video
         ref="videoRef"
         :src="currentVideoUrl"
         autoplay
         playsinline
         :poster="currentThumb"
-        @click="toggleOverlay"
-        @dblclick="togglePlay"
+        @click.stop="handleVideoClick"
+        @dblclick.stop="togglePlay"
       ></video>
 
       <!-- 播放/暂停图标 -->
@@ -151,6 +151,7 @@ const toastShow = ref(false)
 const toastMsg = ref('')
 const isPaused = ref(false)
 const showPlayIcon = ref(false)
+let clickTimer: ReturnType<typeof setTimeout> | null = null
 
 // 互动状态
 const isLiked = ref(false)
@@ -203,6 +204,22 @@ const getLikes = (ep: any) => {
 // 切换覆盖层显示/隐藏
 const toggleOverlay = () => {
   overlayVisible.value = !overlayVisible.value
+}
+
+// 处理视频点击（区分单击和双击）
+const handleVideoClick = () => {
+  if (clickTimer) {
+    // 双击
+    clearTimeout(clickTimer)
+    clickTimer = null
+    togglePlay()
+  } else {
+    // 单击 - 延迟执行，如果300ms内再次点击则取消
+    clickTimer = setTimeout(() => {
+      clickTimer = null
+      toggleOverlay()
+    }, 300)
+  }
 }
 
 // 切换播放/暂停
@@ -403,6 +420,7 @@ onMounted(async () => {
 onUnmounted(() => {
   if (swipeHintTimer) clearTimeout(swipeHintTimer)
   if (toastTimer) clearTimeout(toastTimer)
+  if (clickTimer) clearTimeout(clickTimer)
 })
 </script>
 
