@@ -1,0 +1,6 @@
+[build]
+  build_command = "npm install && npm run build && cp static-server.js dist/"
+  output_path = "dist"
+
+[start]
+  cmd = "node static-server.js"
