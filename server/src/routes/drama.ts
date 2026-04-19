@@ -8,29 +8,42 @@ router.get('/', (req: Request, res: Response) => {
   try {
     const { category, page = 1, pageSize = 10 } = req.query
     const offset = (Number(page) - 1) * Number(pageSize)
-    
+
     let sql = 'SELECT * FROM dramas'
     let countSql = 'SELECT COUNT(*) as total FROM dramas'
     const params: any[] = []
-    
+
     if (category) {
       sql += ' WHERE category = ?'
       countSql += ' WHERE category = ?'
       params.push(category)
     }
-    
+
     sql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?'
-    
+
     const dramas = db.prepare(sql).all(...params, Number(pageSize), offset)
     const { total } = db.prepare(countSql).get(...(category ? [category] : [])) as { total: number }
-    
-    // Get episodes for each drama
-    const getEpisodes = db.prepare('SELECT * FROM episodes WHERE drama_id = ? ORDER BY episode_number')
+
+    // Get all episodes in one query (fix N+1 problem)
+    const dramaIds = dramas.map((d: any) => d.id)
+    let episodes: any[] = []
+    if (dramaIds.length > 0) {
+      const placeholders = dramaIds.map(() => '?').join(',')
+      episodes = db.prepare(`SELECT * FROM episodes WHERE drama_id IN (${placeholders}) ORDER BY drama_id, episode_number`).all(...dramaIds)
+    }
+
+    // Group episodes by drama_id
+    const episodesByDrama = episodes.reduce((acc: any, ep: any) => {
+      if (!acc[ep.drama_id]) acc[ep.drama_id] = []
+      acc[ep.drama_id].push(ep)
+      return acc
+    }, {})
+
     const dramasWithEpisodes = dramas.map((drama: any) => ({
       ...drama,
-      episodes: getEpisodes.all(drama.id)
+      episodes: episodesByDrama[drama.id] || []
     }))
-    
+
     res.json({
       code: 0,
       message: 'success',
