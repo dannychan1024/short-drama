@@ -117,6 +117,24 @@
     <!-- 滑动提示 -->
     <div v-if="showSwipeHint" class="swipe-hint">{{ swipeHint }}</div>
 
+    <!-- 购买确认弹窗 -->
+    <div v-if="showPurchaseModal" class="purchase-modal">
+      <div class="modal-content">
+        <h3>购买《{{ dramaTitle }}》</h3>
+        <p class="episode-info">剧集：第{{ currentEpNumber }}集</p>
+        <p class="price">价格：¥{{ dramaPrice }}</p>
+        <p class="balance">账户余额：¥{{ userBalance }}</p>
+        <p v-if="balanceInsufficient" class="error">余额不足，请先充值</p>
+        <div class="modal-buttons">
+          <button class="cancel-btn" @click="showPurchaseModal = false">取消</button>
+          <button v-if="!balanceInsufficient" class="confirm-btn" @click="confirmPurchase" :disabled="purchasing">
+            {{ purchasing ? '购买中...' : '确认购买' }}
+          </button>
+          <button v-else class="confirm-btn" @click="goRecharge">去充值</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Toast提示 -->
     <div v-if="toastShow" class="toast">{{ toastMsg }}</div>
 
@@ -132,6 +150,8 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { dramaApi } from '@/api/drama'
+import { orderApi } from '@/api/order'
+import toast from '@/utils/toast'
 
 const router = useRouter()
 const route = useRoute()
@@ -166,6 +186,13 @@ const duration = ref(0)
 const dramaTitle = ref('热播短剧')
 const dramaId = ref<number>(0)
 const dramaDescription = ref('')
+
+// 购买相关状态
+const showPurchaseModal = ref(false)
+const dramaPrice = ref(0)
+const userBalance = ref(0)
+const balanceInsufficient = ref(false)
+const purchasing = ref(false)
 
 let swipeHintTimer: ReturnType<typeof setTimeout> | null = null
 let toastTimer: ReturnType<typeof setTimeout> | null = null
@@ -326,6 +353,50 @@ const showSwipe = (direction: string) => {
   }, 800)
 }
 
+// 确认购买（带防重入）
+const confirmPurchase = async () => {
+  if (purchasing.value) return
+  purchasing.value = true
+  try {
+    const res = await orderApi.createAndPay(dramaId.value)
+    if (res.code === 0) {
+      toast.success('购买成功')
+      showPurchaseModal.value = false
+      // 直接更新当前 episode 的 video_url
+      episode.value = episodeList.value.find(ep => ep.id === episode.value.id)
+    } else {
+      toast.error(res.message || '购买失败')
+      if (res.message?.includes('余额')) {
+        balanceInsufficient.value = true
+      }
+    }
+  } catch (err: any) {
+    toast.error(err.message || '购买失败')
+  } finally {
+    purchasing.value = false
+  }
+}
+
+// 去充值
+const goRecharge = () => {
+  router.push('/wallet')
+}
+
+// 检查是否需要显示购买弹窗
+const checkAndShowPurchaseModal = (ep: any, isPurchased: boolean, price: number) => {
+  // 免费剧集或已购买 - 不弹窗
+  if (ep.is_free === 1 || ep.is_free === true || isPurchased) {
+    return false
+  }
+
+  // 需要购买 - 显示弹窗
+  dramaPrice.value = price
+  userBalance.value = 0  // TODO: 从 userStore 获取
+  balanceInsufficient.value = userBalance.value < price
+  showPurchaseModal.value = true
+  return true
+}
+
 // 设置视频事件监听
 const setupVideoListeners = () => {
   const video = videoRef.value
@@ -371,6 +442,7 @@ onMounted(async () => {
       const dramaRes = await dramaApi.getDetail(drama_id)
       if (dramaRes.data) {
         dramaTitle.value = dramaRes.data.title || '热播短剧'
+        dramaPrice.value = dramaRes.data.price || 0
         dramaDescription.value = dramaRes.data.description || ''
         episodeList.value = dramaRes.data.episodes || []
       }
@@ -395,6 +467,11 @@ onMounted(async () => {
     episode.value = episodeList.value.find(ep => ep.id === episodeId) || episodeList.value[0]
     likeCount.value = getLikes(episode.value)
     setTimeout(setupVideoListeners, 100)
+
+    // 检查是否需要购买弹窗
+    if (episode.value.video_url === 'locked') {
+      checkAndShowPurchaseModal(episode.value, dramaRes.data?.isPurchased || false, dramaPrice.value)
+    }
 
   } catch (error) {
     console.error('获取剧集详情失败:', error)
@@ -842,5 +919,78 @@ onUnmounted(() => {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.8);
   font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* 购买弹窗 */
+.purchase-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  width: 300px;
+  text-align: center;
+}
+
+.modal-content h3 {
+  margin: 0 0 16px;
+  font-size: 18px;
+  color: #333;
+}
+
+.episode-info, .price, .balance {
+  margin: 8px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.price {
+  color: #FF4D4F;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.error {
+  color: #FF4D4F;
+  font-size: 13px;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.cancel-btn, .confirm-btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 15px;
+  border: none;
+}
+
+.cancel-btn {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.confirm-btn {
+  background: #FF4D4F;
+  color: #fff;
+}
+
+.confirm-btn:disabled {
+  background: #ccc;
 }
 </style>
