@@ -26,3 +26,12 @@ Thumbs.db
 
 # Local Netlify folder
 .netlify
+
+# Claude Code
+.claude/
+
+# Remember history
+.remember/
+
+# Session temp files
+.remember/tmp/
