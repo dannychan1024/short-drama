@@ -1,19 +1,13 @@
 import request from './request'
 
 export const orderApi = {
-  getOrders: (params?: { status?: string; page?: number; pageSize?: number }) => {
-    return request.get<any>('/orders', { params })
+  // 创建订单并支付
+  createAndPay: (dramaId: number) => {
+    return request.post('/orders', { dramaId })
   },
-  
-  createOrder: (dramaId: number) => {
-    return request.post<any>('/orders', { dramaId })
-  },
-  
-  payOrder: (orderId: number) => {
-    return request.post<any>(`/orders/${orderId}/pay`)
-  },
-  
-  getOrderDetail: (orderId: number) => {
-    return request.get<any>(`/orders/${orderId}`)
+
+  // 获取订单列表
+  getOrders: (params?: { page?: number; pageSize?: number }) => {
+    return request.get('/orders', { params })
   }
 }
