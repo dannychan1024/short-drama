@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:run": "vitest run"
   },
   "dependencies": {
     "@types/dplayer": "^1.25.5",
@@ -21,9 +23,12 @@
     "@types/node": "^20.11.30",
     "@unocss/reset": "^0.58.6",
     "@vitejs/plugin-vue": "^5.0.4",
+    "@vue/test-utils": "^2.4.6",
+    "happy-dom": "^20.9.0",
     "typescript": "^5.4.2",
     "unocss": "^0.58.6",
     "vite": "^5.1.6",
+    "vitest": "^4.1.4",
     "vue-tsc": "^2.0.6"
   }
 }
