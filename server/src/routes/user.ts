@@ -73,4 +73,25 @@ router.put('/info', authMiddleware, (req: AuthRequest, res: Response) => {
   }
 })
 
+// 获取用户购买记录
+router.get('/purchases', authMiddleware, (req: AuthRequest, res: Response) => {
+  try {
+    const purchases = db.prepare(`
+      SELECT up.*, d.title as dramaTitle, d.cover as dramaCover
+      FROM user_purchases up
+      JOIN dramas d ON up.drama_id = d.id
+      WHERE up.user_id = ?
+      ORDER BY up.created_at DESC
+    `).all(req.userId)
+
+    res.json({
+      code: 0,
+      message: 'success',
+      data: purchases
+    })
+  } catch (error: any) {
+    res.status(500).json({ code: 500, message: error.message, data: null })
+  }
+})
+
 export default router
