@@ -20,7 +20,10 @@ export const useUserStore = defineStore('user', () => {
     const res: any = await userApi.login(phone, code)
     const data = res.data || {}
     setToken(data.token || '')
-    setUserInfo(data.user || {})
+    setUserInfo({
+      ...data.user,
+      balance: data.user?.balance || 0
+    })
     return res
   }
 
@@ -28,7 +31,10 @@ export const useUserStore = defineStore('user', () => {
     if (!token.value) return
     try {
       const res: any = await userApi.getUserInfo()
-      setUserInfo(res.data || {})
+      setUserInfo({
+        ...res.data,
+        balance: res.data?.balance || 0
+      })
     } catch (error) {
       logout()
     }
