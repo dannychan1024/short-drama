@@ -61,21 +61,48 @@ router.get('/', (req: Request, res: Response) => {
 router.get('/:id', (req: Request, res: Response) => {
   try {
     const { id } = req.params
-    
+
+    // 从 header 提取 userId（可选，不强制登录）
+    let userId: number | null = null
+    const authHeader = req.headers.authorization
+    if (authHeader) {
+      try {
+        const jwt = require('jsonwebtoken')
+        const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET || 'short-drama-secret-key') as any
+        userId = decoded.userId || null
+      } catch (e) {
+        // token 无效，忽略
+      }
+    }
+
     const drama = db.prepare('SELECT * FROM dramas WHERE id = ?').get(id)
-    
+
     if (!drama) {
       return res.status(404).json({ code: 404, message: '短剧不存在', data: null })
     }
-    
+
     const episodes = db.prepare('SELECT * FROM episodes WHERE drama_id = ? ORDER BY episode_number').all(id)
-    
+
+    // 检查用户是否已购买
+    let isPurchased = false
+    if (userId) {
+      const purchase = db.prepare('SELECT * FROM user_purchases WHERE user_id = ? AND drama_id = ?').get(userId, id)
+      isPurchased = !!purchase
+    }
+
+    // 如果已购买或免费，返回真实 video_url；否则付费集返回 locked
+    const episodesWithLock = episodes.map((ep: any) => ({
+      ...ep,
+      video_url: ep.is_free === 1 || isPurchased ? ep.video_url : 'locked'
+    }))
+
     res.json({
       code: 0,
       message: 'success',
       data: {
         ...drama,
-        episodes
+        episodes: episodesWithLock,
+        isPurchased
       }
     })
   } catch (error: any) {
@@ -87,13 +114,39 @@ router.get('/:id', (req: Request, res: Response) => {
 router.get('/:id/episodes', (req: Request, res: Response) => {
   try {
     const { id } = req.params
-    
+
+    // 从 header 提取 userId（可选，不强制登录）
+    let userId: number | null = null
+    const authHeader = req.headers.authorization
+    if (authHeader) {
+      try {
+        const jwt = require('jsonwebtoken')
+        const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET || 'short-drama-secret-key') as any
+        userId = decoded.userId || null
+      } catch (e) {
+        // token 无效，忽略
+      }
+    }
+
+    // 检查用户是否已购买
+    let isPurchased = false
+    if (userId) {
+      const purchase = db.prepare('SELECT * FROM user_purchases WHERE user_id = ? AND drama_id = ?').get(userId, id)
+      isPurchased = !!purchase
+    }
+
     const episodes = db.prepare('SELECT * FROM episodes WHERE drama_id = ? ORDER BY episode_number').all(id)
-    
+
+    // 如果已购买或免费，返回真实 video_url；否则付费集返回 locked
+    const episodesWithLock = episodes.map((ep: any) => ({
+      ...ep,
+      video_url: ep.is_free === 1 || isPurchased ? ep.video_url : 'locked'
+    }))
+
     res.json({
       code: 0,
       message: 'success',
-      data: episodes
+      data: episodesWithLock
     })
   } catch (error: any) {
     res.status(500).json({ code: 500, message: error.message, data: null })
