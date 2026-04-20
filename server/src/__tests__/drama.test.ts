@@ -1,67 +1,114 @@
-describe('Drama API - Episode Locking Logic', () => {
-  describe('isPurchased Check', () => {
-    it('should return isPurchased=true for purchased user', () => {
-      const userPurchases = [{ user_id: 1, drama_id: 3 }]
-      const userId = 1
-      const dramaId = 3
+import request from 'supertest'
+import express from 'express'
+import jwt from 'jsonwebtoken'
 
-      const isPurchased = userPurchases.some(p => p.user_id === userId && p.drama_id === dramaId)
-      expect(isPurchased).toBe(true)
-    })
+// Create test app
+const createApp = () => {
+  const app = express()
+  app.use(express.json())
 
-    it('should return isPurchased=false for non-purchased user', () => {
-      const userPurchases = [{ user_id: 1, drama_id: 3 }]
-      const userId = 2
-      const dramaId = 3
+  // Mock database
+  const mockDb = {
+    dramas: [
+      { id: 3, title: '甜蜜暴击', price: 18, cover: 'cover.jpg' }
+    ],
+    episodes: [
+      { id: 51, drama_id: 3, episode_number: 1, is_free: 1, video_url: 'https://free.mp4' },
+      { id: 52, drama_id: 3, episode_number: 2, is_free: 1, video_url: 'https://free2.mp4' },
+      { id: 53, drama_id: 3, episode_number: 3, is_free: 0, video_url: 'https://paid.mp4' }
+    ],
+    userPurchases: [] as { user_id: number; drama_id: number }[]
+  }
 
-      const isPurchased = userPurchases.some(p => p.user_id === userId && p.drama_id === dramaId)
-      expect(isPurchased).toBe(false)
-    })
+  // Drama detail endpoint
+  app.get('/api/dramas/:id', (req, res) => {
+    const { id } = req.params
+    const drama = mockDb.dramas.find(d => d.id === Number(id))
 
-    it('should return isPurchased=false when user not logged in', () => {
-      const userId = null as number | null
-      const dramaId = 3
+    if (!drama) {
+      return res.status(404).json({ code: 404, message: '短剧不存在', data: null })
+    }
 
-      const isPurchased = userId ? true : false
-      expect(isPurchased).toBe(false)
+    // Check auth
+    let userId: number | null = null
+    const authHeader = req.headers.authorization
+    if (authHeader) {
+      try {
+        const decoded = jwt.verify(authHeader.split(' ')[1], 'test-secret') as { userId?: number }
+        userId = decoded.userId || null
+      } catch (e) {}
+    }
+
+    // Check purchase
+    const isPurchased = userId
+      ? mockDb.userPurchases.some(p => p.user_id === userId && p.drama_id === Number(id))
+      : false
+
+    // Process episodes
+    const episodes = mockDb.episodes
+      .filter(e => e.drama_id === Number(id))
+      .map(ep => ({
+        ...ep,
+        video_url: ep.is_free === 1 || isPurchased ? ep.video_url : 'locked'
+      }))
+
+    res.json({
+      code: 0,
+      message: 'success',
+      data: { ...drama, episodes, isPurchased }
     })
   })
 
-  describe('Episode Video URL Processing', () => {
-    it('should show real URL for free episodes regardless of purchase status', () => {
-      const episode = { id: 51, is_free: 1, video_url: 'https://free.mp4' }
-      const isPurchased = false
+  return { app, mockDb }
+}
 
-      const finalUrl = (episode.is_free === 1 || isPurchased) ? episode.video_url : 'locked'
-      expect(finalUrl).toBe('https://free.mp4')
+describe('Drama API - Episode Locking Integration', () => {
+  const { app, mockDb } = createApp()
+
+  describe('GET /api/dramas/:id', () => {
+    it('should return free episodes with real video URLs for non-authenticated user', async () => {
+      const res = await request(app).get('/api/dramas/3')
+
+      expect(res.status).toBe(200)
+      expect(res.body.code).toBe(0)
+      expect(res.body.data.episodes).toHaveLength(3)
+      expect(res.body.data.episodes[0].video_url).toBe('https://free.mp4')
+      expect(res.body.data.episodes[1].video_url).toBe('https://free2.mp4')
+      expect(res.body.data.episodes[2].video_url).toBe('locked') // Paid, not purchased
     })
 
-    it('should show real URL for paid episodes if purchased', () => {
-      const episode = { id: 52, is_free: 0, video_url: 'https://paid.mp4' }
-      const isPurchased = true
+    it('should return locked for paid episodes when user has not purchased', async () => {
+      const res = await request(app).get('/api/dramas/3')
 
-      const finalUrl = (episode.is_free === 1 || isPurchased) ? episode.video_url : 'locked'
-      expect(finalUrl).toBe('https://paid.mp4')
+      expect(res.status).toBe(200)
+      expect(res.body.data.episodes[2].video_url).toBe('locked')
+      expect(res.body.data.isPurchased).toBe(false)
     })
 
-    it('should lock paid episodes if not purchased', () => {
-      const episode = { id: 53, is_free: 0, video_url: 'https://paid.mp4' }
-      const isPurchased = false
+    it('should return real video URL for paid episode when user has purchased', async () => {
+      // Add purchase
+      mockDb.userPurchases.push({ user_id: 1, drama_id: 3 })
 
-      const finalUrl = (episode.is_free === 1 || isPurchased) ? episode.video_url : 'locked'
-      expect(finalUrl).toBe('locked')
+      // Generate valid token
+      const token = jwt.sign({ userId: 1 }, 'test-secret')
+      const res = await request(app)
+        .get('/api/dramas/3')
+        .set('Authorization', `Bearer ${token}`)
+
+      expect(res.status).toBe(200)
+      expect(res.body.data.isPurchased).toBe(true)
+      expect(res.body.data.episodes[2].video_url).toBe('https://paid.mp4')
+
+      // Cleanup
+      mockDb.userPurchases.pop()
     })
-  })
 
-  describe('Free Episode Definition', () => {
-    it('should consider is_free=1 as free episode', () => {
-      const isFree = 1
-      expect(isFree === 1).toBe(true)
-    })
+    it('should return 404 for non-existent drama', async () => {
+      const res = await request(app).get('/api/dramas/999')
 
-    it('should consider is_free=0 as paid episode', () => {
-      const isFree = 0
-      expect(isFree === 0).toBe(true)
+      expect(res.status).toBe(404)
+      expect(res.body.code).toBe(404)
+      expect(res.body.message).toBe('短剧不存在')
     })
   })
 })
